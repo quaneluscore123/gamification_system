@@ -1,7 +1,7 @@
 import CharacterCard from './components/CharacterCard';
 import MentorAstra from './components/MentorAstra';
 import FloorView from './components/FloorView';
-import { GameProvider } from './context/GameContext';
+import DevConsole from './components/DevConsole';
 
 // We wrap the inner App with GameProvider in main.tsx, so here we just use the components.
 function App() {
@@ -14,7 +14,7 @@ function App() {
       <MentorAstra />
       <CharacterCard />
       <FloorView />
-      
+      <DevConsole />
     </div>
   )
 }

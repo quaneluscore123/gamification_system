@@ -1,16 +1,12 @@
-import { createContext, useState, useEffect, ReactNode } from 'react';
-import { type World, initialWorlds, type Room } from '../data/worldsData';
+import { createContext, useState, useEffect, type ReactNode } from 'react';
+import { type World, initialWorlds } from '../data/worldsData';
+import { type PlayerProgress } from '../domain/models';
+import { storageService } from '../core/StorageService';
+import { gameFacade } from '../facade/GameFacade';
 
-export interface PlayerStats {
-  level: number;
-  xp: number;
-  maxXp: number;
-  gold: number;
-  legacy: string[];
-}
-
+// Legacy Types (Dần dần sẽ được thay thế bởi Domain Models)
 export interface GameState {
-  player: PlayerStats;
+  player: PlayerProgress;
   worlds: World[];
   currentWorldIndex: number;
   completeRoom: (worldId: string, roomId: string) => void;
@@ -22,9 +18,10 @@ const defaultState: GameState = {
   player: {
     level: 1,
     xp: 0,
-    maxXp: 100,
     gold: 0,
-    legacy: []
+    title: 'Beginner',
+    legacy: [],
+    streak: 0
   },
   worlds: initialWorlds,
   currentWorldIndex: 0,
@@ -36,98 +33,81 @@ const defaultState: GameState = {
 export const GameContext = createContext<GameState>(defaultState);
 
 export const GameProvider = ({ children }: { children: ReactNode }) => {
-  const [player, setPlayer] = useState<PlayerStats>(defaultState.player);
-  const [worlds, setWorlds] = useState<World[]>(defaultState.worlds);
-  const [currentWorldIndex, setCurrentWorldIndex] = useState(0);
+  // Load synchronously to prevent initial state from overwriting saved data
+  const [player, setPlayer] = useState<PlayerProgress>(() => {
+    const { progress } = gameFacade.loadGame();
+    return progress || defaultState.player;
+  });
 
-  // Load from local storage on mount
-  useEffect(() => {
-    const savedPlayer = localStorage.getItem('lifequest_player');
+  const [worlds, setWorlds] = useState<World[]>(() => {
     const savedWorlds = localStorage.getItem('lifequest_worlds');
+    return savedWorlds ? JSON.parse(savedWorlds) : defaultState.worlds;
+  });
+
+  const [currentWorldIndex, setCurrentWorldIndex] = useState<number>(() => {
     const savedWorldIndex = localStorage.getItem('lifequest_current_world');
+    return savedWorldIndex ? JSON.parse(savedWorldIndex) : defaultState.currentWorldIndex;
+  });
 
-    if (savedPlayer) setPlayer(JSON.parse(savedPlayer));
-    if (savedWorlds) setWorlds(JSON.parse(savedWorlds));
-    if (savedWorldIndex) setCurrentWorldIndex(JSON.parse(savedWorldIndex));
-  }, []);
-
-  // Auto-save whenever state changes
+  // Save Player via StorageService, others via old way temporarily
   useEffect(() => {
-    localStorage.setItem('lifequest_player', JSON.stringify(player));
+    storageService.savePlayerProgress(player);
     localStorage.setItem('lifequest_worlds', JSON.stringify(worlds));
     localStorage.setItem('lifequest_current_world', JSON.stringify(currentWorldIndex));
   }, [player, worlds, currentWorldIndex]);
 
-  const gainXp = (amount: number) => {
-    setPlayer(prev => {
-      let newXp = prev.xp + amount;
-      let newLevel = prev.level;
-      let newMaxXp = prev.maxXp;
-
-      // Level up logic
-      while (newXp >= newMaxXp) {
-        newXp -= newMaxXp;
-        newLevel += 1;
-        newMaxXp = newLevel * 100; // Formula: level * 100
-
-        // Trigger Level up animation / sound here later
-      }
-
-      return { ...prev, xp: newXp, level: newLevel, maxXp: newMaxXp };
-    });
-  };
-
-  const gainGold = (amount: number) => {
-    setPlayer(prev => ({ ...prev, gold: prev.gold + amount }));
-  };
-
-  const spendGold = (amount: number): boolean => {
-    if (player.gold >= amount) {
-      setPlayer(prev => ({ ...prev, gold: prev.gold - amount }));
-      return true;
-    }
-    return false;
-  };
-
+  // Handle Room Completion
   const completeRoom = (worldId: string, roomId: string) => {
     setWorlds(prevWorlds => {
-      const newWorlds = [...prevWorlds];
-      const worldIndex = newWorlds.findIndex(w => w.id === worldId);
+      const worldIndex = prevWorlds.findIndex(w => w.id === worldId);
       if (worldIndex === -1) return prevWorlds;
 
-      const world = { ...newWorlds[worldIndex] };
+      const world = prevWorlds[worldIndex];
       const roomIndex = world.rooms.findIndex(r => r.id === roomId);
       if (roomIndex === -1) return prevWorlds;
 
       const room = { ...world.rooms[roomIndex] };
 
-      // Prevent completing twice
       if (room.completed) return prevWorlds;
 
-      // Mark completed
       room.completed = true;
-      world.rooms[roomIndex] = room;
 
-      // Damage Boss
+      // Tính thưởng
+      const { updatedProgress, leveledUp } = gameFacade.claimQuest(
+        { id: room.id, title: room.name, type: 'MAIN', difficulty: 'MEDIUM', estimatedTimeMin: 15, tags: [], rewards: { xp: room.xpReward, gold: room.goldReward, bossDamage: 0 } },
+        player
+      );
+      setPlayer(updatedProgress);
+
+      if (leveledUp) {
+        // Có thể add logic hiển thị popup ở đây
+      }
+
+      // Xử lý Boss cũ (Sẽ refactor sang WorldService sau)
       const newBoss = { ...world.boss };
-      newBoss.currentHp = Math.max(0, newBoss.currentHp - room.damageToBoss);
-      world.boss = newBoss;
+      let dmg = 100;
+      if (room.xpReward > 100) dmg = 200;
+      newBoss.currentHp -= dmg;
 
-      newWorlds[worldIndex] = world;
+      if (newBoss.currentHp < 0) newBoss.currentHp = 0;
 
-      // Give Rewards
-      gainXp(room.xpReward);
-      gainGold(room.goldReward);
+      const newRooms = [...world.rooms];
+      newRooms[roomIndex] = room;
 
-      // Check Boss Defeated (World Cleared)
+      const newWorld = {
+        ...world,
+        rooms: newRooms,
+        boss: newBoss
+      };
+
+      const newWorlds = [...prevWorlds];
+      newWorlds[worldIndex] = newWorld;
+
       if (newBoss.currentHp === 0) {
-        // Add Legacy
         setPlayer(prev => ({
           ...prev,
           legacy: [...prev.legacy, `Defeated ${newBoss.name} in ${world.name}`]
         }));
-
-        // Move to next world if exists
         if (worldIndex < newWorlds.length - 1) {
           setCurrentWorldIndex(worldIndex + 1);
         }
@@ -137,8 +117,27 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
     });
   };
 
+  const gainGold = (amount: number) => {
+    setPlayer(prev => ({ ...prev, gold: prev.gold + amount }));
+  };
+
+  const spendGold = (amount: number) => {
+    if (player.gold >= amount) {
+      setPlayer(prev => ({ ...prev, gold: prev.gold - amount }));
+      return true;
+    }
+    return false;
+  };
+
   return (
-    <GameContext.Provider value={{ player, worlds, currentWorldIndex, completeRoom, gainGold, spendGold }}>
+    <GameContext.Provider value={{
+      player,
+      worlds,
+      currentWorldIndex,
+      completeRoom,
+      gainGold,
+      spendGold
+    }}>
       {children}
     </GameContext.Provider>
   );
