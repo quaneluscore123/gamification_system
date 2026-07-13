@@ -1,0 +1,48 @@
+/* Import phông chữ Outfit phong cách hiện đại/tech */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&display=swap');
+
+/* Thiết lập bộ biến màu sắc cho Game */
+:root {
+  --bg-color: #0f172a;
+  /* Nền tối của hầm ngục */
+  --card-bg: #1e293b;
+  /* Nền của các ô nhiệm vụ/nhân vật */
+  --primary-color: #3b82f6;
+  /* Xanh dương cho thanh kinh nghiệm */
+  --text-main: #f8fafc;
+  /* Chữ trắng */
+  --text-muted: #94a3b8;
+  /* Chữ xám cho các dòng chú thích */
+  --gold-color: #f59e0b;
+  /* Vàng cho tiền tệ (Gold) */
+  --danger-color: #ef4444;
+  /* Đỏ cho máu Boss */
+}
+
+/* Reset toàn bộ style mặc định của trình duyệt */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  /* Để app nằm giữa màn hình */
+}
+
+/* Biến app trông giống giao diện Mobile/Bảng điều khiển Game */
+#root {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  padding: 20px;
+  border-left: 2px solid var(--card-bg);
+  border-right: 2px solid var(--card-bg);
+}
