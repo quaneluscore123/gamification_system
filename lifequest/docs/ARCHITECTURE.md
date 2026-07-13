@@ -1,69 +1,50 @@
-# Technical Architecture (Domain Driven Design)
+# Technical Architecture (Feature-first + DDD)
 
 ## 1. Core Architecture Philosophy
-Dự án áp dụng **Domain Driven Design (DDD)** ở mức đơn giản ngay trên Frontend. Các module (player, quest, reward, world) hoàn toàn độc lập.
-Khi chuyển sang Spring Boot ở Phase 5, Domain Logic sẽ được giữ nguyên, chỉ thay thế Storage Layer và Transport Layer. 
+Dự án áp dụng **Feature-first + Domain Driven Design (DDD)**. Khác với kiến trúc Clean Architecture truyền thống chia theo kỹ thuật (components, services, context), kiến trúc này nhóm code theo **Nghiệp vụ (Business Domain)**.
 
-Kiến trúc này đảm bảo ứng dụng có thể scale (mở rộng) dễ dàng và là một "điểm cộng tuyệt đối" khi trả lời phỏng vấn.
+Mỗi Domain hoàn toàn độc lập, tự quản lý UI, Logic, và Data của riêng nó. Việc này giúp dự án có khả năng mở rộng vô hạn và là cấu trúc hoàn hảo nhất để chuyển dịch sang Microservices hoặc Spring Boot nhiều module.
 
-## 2. Directory Structure (Clean Architecture)
+## 2. Directory Structure
 ```text
 src/
-├── config/              # gameBalance.ts (Constants)
-├── core/                # Các Base Services & Interfaces
-│   └── StorageService.ts# Dependency Inversion (LocalStorage -> API sau này)
-├── domain/              # Domain Entities (Immutable Definition)
-│   ├── models/          # PlayerProfile, BossDef, QuestDef
-│   └── progress/        # WorldProgress, QuestProgress (Mutable)
-├── services/            # Domain Services (Chứa Business Logic)
-│   ├── PlayerService.ts
-│   ├── QuestService.ts
-│   ├── RewardService.ts
-│   └── WorldService.ts
-├── facade/              # GameFacade (Điều phối UI và Services)
-│   └── GameFacade.ts
-├── contexts/            # React Context (Chia nhỏ theo Domain)
-│   ├── PlayerContext.tsx
-│   └── WorldContext.tsx
-├── components/          # UI Components
-└── App.tsx
+├── app/                    # Tầng khởi tạo ứng dụng
+│   ├── App.tsx             # Root Layout
+│   ├── main.tsx            # Entry point
+│   ├── providers/          # Global Context Providers
+│   └── router/             # Routing (Nếu có)
+│
+├── shared/                 # Tầng dùng chung
+│   ├── components/         # UI Elements dùng chung (Button, Modal...)
+│   ├── hooks/              # Custom Hooks chung
+│   ├── utils/              # Helper functions
+│   ├── config/             # Config chung (VD: gameBalance.ts)
+│   └── assets/             # Hình ảnh, Fonts
+│
+└── domains/                # Tầng Nghiệp vụ cốt lõi (Feature Slices)
+    │
+    ├── player/             # Domain Player
+    │   ├── domain/         # Entities, Types (PlayerProfile, PlayerProgress)
+    │   ├── application/    # Use cases, Services (Level up logic)
+    │   ├── infrastructure/ # Lưu trữ (LocalStorage)
+    │   └── presentation/   # UI Component (CharacterCard, Stats)
+    │
+    ├── world/              # Domain World & Boss
+    │   ├── domain/
+    │   ├── application/
+    │   ├── infrastructure/
+    │   └── presentation/   # FloorView, BossCard
+    │
+    ├── quest/              # Domain Nhiệm vụ
+    ├── inventory/          # Domain Túi đồ
+    ├── shop/               # Domain Cửa hàng
+    ├── event/              # Domain Sự kiện ngẫu nhiên
+    └── meta/               # Domain hệ thống Dev Console, Achievements
 ```
 
-## 3. Data Models (Immutable vs Progress)
+## 3. Lớp trong mỗi Domain (4-Layer DDD)
 
-### Nguyên tắc
-Tách biệt rõ ràng giữa **Định nghĩa (Definition)** và **Tiến trình (Progress)**.
-- `BossDef` không chứa máu hiện tại.
-- `QuestDef` không chứa trạng thái hoàn thành.
-
-### Ví dụ
-```typescript
-// Immutable Definition
-interface BossDef {
-  id: string;
-  name: string;
-  maxHp: number;
-  difficulty: 'EASY' | 'NORMAL' | 'HARD';
-  baseReward: Reward;
-}
-
-// Mutable Progress
-interface WorldProgress {
-  worldId: string;
-  bossCurrentHp: number;
-  completedRooms: string[];
-}
-
-// Quest Status
-enum QuestStatus {
-  LOCKED,
-  AVAILABLE,
-  IN_PROGRESS,
-  COMPLETED,
-  CLAIMED
-}
-```
-
-## 4. Design Patterns Applied
-- **Facade Pattern (`GameFacade`)**: UI không bao giờ gọi thẳng Service. UI gọi `GameFacade.completeQuest()`, Facade sẽ tự điều phối `QuestService` kiểm tra logic, gọi `RewardService` tính thưởng, và gọi `PlayerService` cộng điểm.
-- **Dependency Inversion (`StorageService`)**: Các Service lưu dữ liệu thông qua interface `StorageService`. Hiện tại nó implement `LocalStorage`, tương lai sẽ đổi sang `RestApiStorage` mà không cần sửa Core Logic.
+1. **`domain/`**: Chứa các Entity Interfaces (vd: `QuestDef`, `QuestProgress`) và các Pure Functions cực kỳ cơ bản. Hoàn toàn KHÔNG phụ thuộc vào React hay LocalStorage.
+2. **`application/`**: Chứa các Use Cases (Services) thực thi Logic (vd: `completeQuest`). Gọi đến `domain` và `infrastructure`.
+3. **`infrastructure/`**: Thao tác trực tiếp với LocalStorage hoặc REST API (Tương lai). Đây là tầng duy nhất biết dữ liệu được lưu ở đâu.
+4. **`presentation/`**: Chứa React Components (`.tsx`) và React Hooks. Đây là tầng duy nhất biết về React. Tầng này sẽ gọi xuống tầng `application/` để thực thi logic.

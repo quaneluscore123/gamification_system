@@ -1,5 +1,5 @@
-import { type PlayerProgress } from '../../domain/models';
-import { GameBalance } from '../../config/gameBalance';
+import { type PlayerProgress } from '../domain/models';
+import { GameBalance } from '../../../shared/config/gameBalance';
 
 export class PlayerService {
 
@@ -32,7 +32,6 @@ export class PlayerService {
   }
 
   getRequiredXpForLevel(level: number) {
-    // Base XP * (Multiplier ^ (level - 1))
     return Math.floor(GameBalance.BASE_XP_REQUIREMENT * Math.pow(GameBalance.XP_MULTIPLIER_PER_LEVEL, level - 1));
   }
 

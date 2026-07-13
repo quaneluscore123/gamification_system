@@ -1,9 +1,8 @@
-import CharacterCard from './components/CharacterCard';
-import MentorAstra from './components/MentorAstra';
-import FloorView from './components/FloorView';
-import DevConsole from './components/DevConsole';
+import CharacterCard from '../domains/player/presentation/CharacterCard';
+import MentorAstra from '../domains/meta/presentation/MentorAstra';
+import FloorView from '../domains/world/presentation/FloorView';
+import DevConsole from '../domains/meta/presentation/DevConsole';
 
-// We wrap the inner App with GameProvider in main.tsx, so here we just use the components.
 function App() {
   return (
     <div style={{ width: '100%', paddingBottom: '50px' }}>

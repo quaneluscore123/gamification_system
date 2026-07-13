@@ -1,6 +1,6 @@
 import { useContext } from 'react';
-import { GameContext } from '../context/GameContext';
-import { playerService } from '../services/player/PlayerService';
+import { GameContext } from '../../../app/providers/GameProvider';
+import { playerService } from '../application/PlayerService';
 import './CharacterCard.css';
 
 export default function CharacterCard() {

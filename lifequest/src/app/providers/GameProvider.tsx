@@ -1,13 +1,14 @@
 import { createContext, useState, useEffect, type ReactNode } from 'react';
-import { type World, initialWorlds } from '../data/worldsData';
-import { type PlayerProgress } from '../domain/models';
-import { storageService } from '../core/StorageService';
-import { gameFacade } from '../facade/GameFacade';
+import { initialWorlds } from '../../domains/world/domain/worldsData';
+import { type WorldDef } from '../../domains/world/domain/models';
+import { type PlayerProgress } from '../../domains/player/domain/models';
+import { storageService } from '../../shared/infrastructure/StorageService';
+import { playerService } from '../../domains/player/application/PlayerService';
 
 // Legacy Types (Dần dần sẽ được thay thế bởi Domain Models)
 export interface GameState {
   player: PlayerProgress;
-  worlds: World[];
+  worlds: WorldDef[];
   currentWorldIndex: number;
   completeRoom: (worldId: string, roomId: string) => void;
   gainGold: (amount: number) => void;
@@ -35,11 +36,21 @@ export const GameContext = createContext<GameState>(defaultState);
 export const GameProvider = ({ children }: { children: ReactNode }) => {
   // Load synchronously to prevent initial state from overwriting saved data
   const [player, setPlayer] = useState<PlayerProgress>(() => {
-    const { progress } = gameFacade.loadGame();
+    let profile = storageService.loadPlayerProfile();
+    let progress = storageService.loadPlayerProgress();
+    
+    if (!profile) {
+      profile = { id: 'usr-1', name: 'Astra\'s Disciple', avatar: '👨‍💻' };
+      storageService.savePlayerProfile(profile);
+    }
+    if (!progress) {
+      progress = defaultState.player;
+      storageService.savePlayerProgress(progress);
+    }
     return progress || defaultState.player;
   });
 
-  const [worlds, setWorlds] = useState<World[]>(() => {
+  const [worlds, setWorlds] = useState<WorldDef[]>(() => {
     const savedWorlds = localStorage.getItem('lifequest_worlds');
     return savedWorlds ? JSON.parse(savedWorlds) : defaultState.worlds;
   });
@@ -68,25 +79,23 @@ export const GameProvider = ({ children }: { children: ReactNode }) => {
 
       const room = { ...world.rooms[roomIndex] };
 
-      if (room.completed) return prevWorlds;
-
-      room.completed = true;
+      // Any room object from initialWorlds acts as a RoomDef mixed with progress right now
+      // This will be refactored when QuestService is fully implemented.
+      if ((room as any).completed) return prevWorlds;
+      (room as any).completed = true;
 
       // Tính thưởng
-      const { updatedProgress, leveledUp } = gameFacade.claimQuest(
-        { id: room.id, title: room.name, type: 'MAIN', difficulty: 'MEDIUM', estimatedTimeMin: 15, tags: [], rewards: { xp: room.xpReward, gold: room.goldReward, bossDamage: 0 } },
-        player
-      );
-      setPlayer(updatedProgress);
+      const { newProgress, levelUp } = playerService.addReward(player, (room as any).xpReward, (room as any).goldReward);
+      setPlayer(newProgress);
 
-      if (leveledUp) {
+      if (levelUp) {
         // Có thể add logic hiển thị popup ở đây
       }
 
       // Xử lý Boss cũ (Sẽ refactor sang WorldService sau)
-      const newBoss = { ...world.boss };
+      const newBoss = { ...world.boss, currentHp: (world.boss as any).currentHp };
       let dmg = 100;
-      if (room.xpReward > 100) dmg = 200;
+      if ((room as any).xpReward > 100) dmg = 200;
       newBoss.currentHp -= dmg;
 
       if (newBoss.currentHp < 0) newBoss.currentHp = 0;

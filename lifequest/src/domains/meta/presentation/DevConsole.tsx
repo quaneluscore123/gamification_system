@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import './DevConsole.css';
-import { gameFacade } from '../facade/GameFacade';
-import { storageService } from '../core/StorageService';
+import { storageService } from '../../../shared/infrastructure/StorageService';
+import { playerService } from '../../player/application/PlayerService';
 
 export default function DevConsole() {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,11 +9,8 @@ export default function DevConsole() {
   const handleCheatXp = () => {
     const progress = storageService.loadPlayerProgress();
     if (progress) {
-      gameFacade.claimQuest(
-        { id: 'cheat', title: '', type: 'OPTIONAL', difficulty: 'EASY', estimatedTimeMin: 0, tags: [], rewards: { xp: 100, gold: 0, bossDamage: 0 } },
-        progress
-      );
-      // Forcing reload by brutal page refresh since we don't have the context hook attached here yet
+      const { newProgress } = playerService.addReward(progress, 100, 0);
+      storageService.savePlayerProgress(newProgress);
       window.location.reload();
     }
   };
