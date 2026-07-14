@@ -1,0 +1,56 @@
+.quest-list {
+    background-color: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+}
+
+.quest-list h3 {
+    color: var(--primary-color);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.quest-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.quest-card {
+    background-color: #1e293b;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.quest-card:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+}
+
+.quest-card.completed {
+    opacity: 0.6;
+    border-color: #059669;
+}
+
+.quest-info h4 {
+    color: var(--text-color);
+    margin-bottom: 5px;
+}
+
+.quest-meta {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+}
+
+.quest-rewards {
+    font-size: 0.85rem;
+    color: #f59e0b;
+    font-weight: bold;
+}

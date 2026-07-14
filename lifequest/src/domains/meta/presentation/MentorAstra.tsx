@@ -1,9 +1,9 @@
 import { useContext } from 'react';
-import { GameContext } from '../../../app/providers/GameProvider';
+import { PlayerContext } from '../../player/application/PlayerProvider';
 import './MentorAstra.css';
 
 export default function MentorAstra() {
-    const { player } = useContext(GameContext);
+    const { player } = useContext(PlayerContext);
 
     // Simple reactive text based on level
     const getDialogue = () => {

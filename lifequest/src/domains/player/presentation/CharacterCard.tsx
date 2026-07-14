@@ -1,10 +1,10 @@
 import { useContext } from 'react';
-import { GameContext } from '../../../app/providers/GameProvider';
+import { PlayerContext } from '../application/PlayerProvider';
 import { playerService } from '../application/PlayerService';
 import './CharacterCard.css';
 
 export default function CharacterCard() {
-    const { player } = useContext(GameContext);
+    const { player } = useContext(PlayerContext);
 
     const requiredXp = playerService.getRequiredXpForLevel(player.level);
     const xpPercentage = Math.min(100, Math.floor((player.xp / requiredXp) * 100));
