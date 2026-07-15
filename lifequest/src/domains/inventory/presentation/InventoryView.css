@@ -1,0 +1,74 @@
+.inventory-view {
+  background-color: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid var(--border-color);
+}
+
+.inventory-view h3 {
+  color: var(--primary-color);
+  margin-bottom: 20px;
+}
+
+.inventory-view.empty {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 15px;
+}
+
+.inventory-item-card {
+  background-color: #1e293b;
+  border: 1px solid #475569;
+  border-radius: 8px;
+  padding: 15px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.item-icon-large {
+  font-size: 2.5rem;
+  background: #334155;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.item-info-col {
+  flex: 1;
+}
+
+.item-info-col h4 {
+  color: #fbbf24;
+  margin-bottom: 5px;
+}
+
+.item-info-col p {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 5px;
+}
+
+.item-effect-desc {
+  font-style: italic;
+  font-size: 0.85rem !important;
+}
+
+.btn-use {
+  background-color: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-use:hover {
+  background-color: #059669;
+}

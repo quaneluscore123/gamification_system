@@ -3,10 +3,12 @@ import CharacterCard from '../domains/player/presentation/CharacterCard';
 import MentorAstra from '../domains/meta/presentation/MentorAstra';
 import FloorView from '../domains/world/presentation/FloorView';
 import QuestList from '../domains/quest/presentation/QuestList';
+import ShopView from '../domains/shop/presentation/ShopView';
+import InventoryView from '../domains/inventory/presentation/InventoryView';
 import DevConsole from '../domains/meta/presentation/DevConsole';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'WORLD' | 'QUESTS'>('WORLD');
+  const [activeTab, setActiveTab] = useState<'WORLD' | 'QUESTS' | 'INVENTORY' | 'SHOP'>('WORLD');
 
   return (
     <div style={{ width: '100%', paddingBottom: '50px' }}>
@@ -30,9 +32,24 @@ function App() {
         >
           📜 Quests
         </button>
+        <button 
+          style={{ flex: 1, backgroundColor: activeTab === 'INVENTORY' ? 'var(--primary-color)' : 'var(--card-bg)' }}
+          onClick={() => setActiveTab('INVENTORY')}
+        >
+          🎒 Hành Trang
+        </button>
+        <button 
+          style={{ flex: 1, backgroundColor: activeTab === 'SHOP' ? 'var(--primary-color)' : 'var(--card-bg)' }}
+          onClick={() => setActiveTab('SHOP')}
+        >
+          🏪 Cửa Hàng
+        </button>
       </div>
 
-      {activeTab === 'WORLD' ? <FloorView /> : <QuestList />}
+      {activeTab === 'WORLD' && <FloorView />}
+      {activeTab === 'QUESTS' && <QuestList />}
+      {activeTab === 'INVENTORY' && <InventoryView />}
+      {activeTab === 'SHOP' && <ShopView />}
       
       <DevConsole />
     </div>

@@ -1,6 +1,7 @@
 import { type PlayerProfile, type PlayerProgress } from '../../domains/player/domain/models';
 import { type QuestProgress } from '../../domains/quest/domain/models';
 import { type WorldProgress } from '../../domains/world/domain/models';
+import { type InventoryProgress } from '../../domains/inventory/domain/models';
 
 // MVP Storage Implementation using LocalStorage
 export interface IStorageService {
@@ -12,6 +13,8 @@ export interface IStorageService {
   loadQuestProgress(): QuestProgress[];
   saveWorldProgress(progress: WorldProgress[]): void;
   loadWorldProgress(): WorldProgress[];
+  saveInventoryProgress(progress: InventoryProgress): void;
+  loadInventoryProgress(): InventoryProgress | null;
   clearAll(): void;
 }
 
@@ -44,11 +47,19 @@ export class LocalStorageService implements IStorageService {
     const data = localStorage.getItem('lq_world_prog');
     return data ? JSON.parse(data) : [];
   }
+  saveInventoryProgress(progress: InventoryProgress): void {
+    localStorage.setItem('lq_inventory_prog', JSON.stringify(progress));
+  }
+  loadInventoryProgress(): InventoryProgress | null {
+    const data = localStorage.getItem('lq_inventory_prog');
+    return data ? JSON.parse(data) : null;
+  }
   clearAll(): void {
     localStorage.removeItem('lq_profile');
     localStorage.removeItem('lq_player_prog');
     localStorage.removeItem('lq_quest_prog');
     localStorage.removeItem('lq_world_prog');
+    localStorage.removeItem('lq_inventory_prog');
     localStorage.removeItem('lifequest_worlds');
     localStorage.removeItem('lifequest_current_world');
   }
