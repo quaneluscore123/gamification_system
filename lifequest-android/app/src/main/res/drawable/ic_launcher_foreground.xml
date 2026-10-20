@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Thanh kiếm đơn giản trên nền tối -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path android:fillColor="#3B82F6" android:pathData="M51,26h6v40h-6z" />
+    <path android:fillColor="#F59E0B" android:pathData="M40,66h28v6h-28z" />
+    <path android:fillColor="#F59E0B" android:pathData="M51,72h6v10h-6z" />
+    <path android:fillColor="#93C5FD" android:pathData="M51,26l3,-6l3,6z" />
+</vector>
