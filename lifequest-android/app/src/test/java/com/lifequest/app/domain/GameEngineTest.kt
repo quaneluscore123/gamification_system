@@ -6,6 +6,7 @@ import com.lifequest.app.domain.game.GameState
 import com.lifequest.app.domain.inventory.InventoryItem
 import com.lifequest.app.domain.player.PlayerProgress
 import com.lifequest.app.domain.quest.QuestStatus
+import com.lifequest.app.domain.world.WorldCatalog
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -56,6 +57,20 @@ class GameEngineTest {
         val moved = GameEngine.nextWorld(state)
         assertEquals(1, moved.currentWorldIndex)
         assertEquals(800, moved.currentWorldProgress?.bossCurrentHp)
+    }
+
+    @Test
+    fun `clearing every room of world 4 defeats the boss`() {
+        var state = newGame.copy(
+            currentWorldIndex = 3,
+            worlds = listOf(WorldCatalog.initialProgress(WorldCatalog.worlds[3])),
+        )
+        listOf("q_w4_r1", "q_w4_r2", "q_w4_r3", "q_w4_r4").forEach {
+            state = GameEngine.completeQuest(state, it).state
+        }
+
+        assertTrue(state.currentWorldProgress!!.isCleared)
+        assertEquals(0, state.currentWorldProgress?.bossCurrentHp)
     }
 
     @Test

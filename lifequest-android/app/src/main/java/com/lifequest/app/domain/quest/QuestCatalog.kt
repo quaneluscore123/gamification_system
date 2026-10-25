@@ -41,6 +41,12 @@ object QuestCatalog {
         QuestDef("q_w3_r3", "Read API (GET)", MAIN, MEDIUM, 90, listOf("spring", "api"), QuestRewards(80, 40, 200)),
         QuestDef("q_w3_r4", "Update & Delete API", MAIN, MEDIUM, 90, listOf("spring", "api"), QuestRewards(80, 40, 200)),
         QuestDef("q_w3_r5", "Unit Testing", MAIN, HARD, 150, listOf("spring", "test"), QuestRewards(150, 100, 200)),
+
+        // World 4
+        QuestDef("q_w4_r1", "Dockerfile Basics", MAIN, EASY, 120, listOf("docker"), QuestRewards(80, 40, 300)),
+        QuestDef("q_w4_r2", "Docker Compose", MAIN, MEDIUM, 90, listOf("docker"), QuestRewards(80, 40, 300)),
+        QuestDef("q_w4_r3", "CI with GitHub Actions", MAIN, HARD, 90, listOf("docker", "deploy"), QuestRewards(80, 40, 300)),
+        QuestDef("q_w4_r4", "Deploy to Cloud", MAIN, HARD, 90, listOf("docker", "deploy"), QuestRewards(80, 40, 300)),
     )
 
     val all = daily + weekly + main

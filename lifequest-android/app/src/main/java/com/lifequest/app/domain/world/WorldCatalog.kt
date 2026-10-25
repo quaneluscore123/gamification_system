@@ -44,6 +44,20 @@ object WorldCatalog {
                 RoomDef("w3_r5", "Unit Testing", "q_w3_r5"),
             ),
         ),
+        // World 4
+        WorldDef(
+            id = "world_4",
+            name = "DevOps & Docker",
+            description = "The heart of Backend Deployment.",
+            requiredLevel = 15,
+            boss = BossDef("boss_4", "Docker & K8s", 1200),
+            rooms = listOf(
+                RoomDef("w4_r1", "Dockerfile Basics", "q_w4_r1"),
+                RoomDef("w4_r2", "Docker Compose", "q_w4_r2"),
+                RoomDef("w4_r3", "CI with GitHub Actions", "q_w4_r3"),
+                RoomDef("w4_r4", "Deploy to Cloud", "q_w4_r4"),
+            ),
+        ),
     )
 
     fun initialProgress(world: WorldDef) = WorldProgress(
