@@ -12,10 +12,12 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class GameEngineTest {
 
     private val newGame = GameEngine.newGame()
+    private val today = LocalDate.of(2026, 10, 27)
 
     @Test
     fun `new game starts in world 1 with full boss hp`() {
@@ -25,7 +27,7 @@ class GameEngineTest {
 
     @Test
     fun `completing a quest grants rewards, damages boss and marks it claimed`() {
-        val outcome = GameEngine.completeQuest(newGame, "q_w1_r1")
+        val outcome = GameEngine.completeQuest(newGame, "q_w1_r1", today)
         val state = outcome.state
 
         assertEquals(50, state.player.xp)
@@ -36,8 +38,8 @@ class GameEngineTest {
 
     @Test
     fun `completing the same quest twice gives no extra reward`() {
-        val once = GameEngine.completeQuest(newGame, "dq_1").state
-        val twice = GameEngine.completeQuest(once, "dq_1")
+        val once = GameEngine.completeQuest(newGame, "dq_1", today).state
+        val twice = GameEngine.completeQuest(once, "dq_1", today)
 
         assertSame(once, twice.state)
         assertTrue(twice.events.isEmpty())
@@ -47,7 +49,7 @@ class GameEngineTest {
     fun `clearing every room of world 1 defeats the boss and unlocks world 2`() {
         var state = newGame
         listOf("q_w1_r1", "q_w1_r2", "q_w1_r3", "q_w1_r4", "q_w1_r5").forEach {
-            state = GameEngine.completeQuest(state, it).state
+            state = GameEngine.completeQuest(state, it, today).state
         }
 
         assertTrue(state.currentWorldProgress!!.isCleared)
@@ -66,7 +68,7 @@ class GameEngineTest {
             worlds = listOf(WorldCatalog.initialProgress(WorldCatalog.worlds[3])),
         )
         listOf("q_w4_r1", "q_w4_r2", "q_w4_r3", "q_w4_r4").forEach {
-            state = GameEngine.completeQuest(state, it).state
+            state = GameEngine.completeQuest(state, it, today).state
         }
 
         assertTrue(state.currentWorldProgress!!.isCleared)

@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import java.time.Clock
+import java.time.LocalDate
 import javax.inject.Inject
 
 sealed interface GameUiState {
@@ -25,6 +27,7 @@ sealed interface GameUiState {
 @HiltViewModel
 class GameViewModel @Inject constructor(
     private val repository: GameRepository,
+    private val clock: Clock,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<GameUiState>(GameUiState.Loading)
@@ -36,10 +39,14 @@ class GameViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             _uiState.value = GameUiState.Ready(repository.load())
+            onAppResumed()
         }
     }
 
-    fun completeQuest(questId: String) = dispatch { GameEngine.completeQuest(it, questId) }
+    /** Làm mới quest nếu đã sang ngày mới (kể cả khi app để mở qua đêm). */
+    fun onAppResumed() = dispatch { GameEngine.startDay(it, today()) }
+
+    fun completeQuest(questId: String) = dispatch { GameEngine.completeQuest(it, questId, today()) }
     fun buyItem(itemId: String) = dispatch { GameEngine.buyItem(it, itemId) }
     fun useItem(itemId: String) = dispatch { GameEngine.useItem(it, itemId) }
     fun nextWorld() = dispatch { GameOutcome(GameEngine.nextWorld(it)) }
@@ -51,8 +58,11 @@ class GameViewModel @Inject constructor(
         viewModelScope.launch {
             repository.clear()
             _uiState.value = GameUiState.Ready(GameEngine.newGame())
+            onAppResumed()
         }
     }
+
+    private fun today(): LocalDate = LocalDate.now(clock)
 
     /** Áp dụng một luật chơi lên state hiện tại, lưu lại và phát sự kiện cho UI. */
     private fun dispatch(action: (GameState) -> GameOutcome) {

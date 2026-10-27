@@ -8,6 +8,9 @@ import com.lifequest.app.domain.quest.QuestStatus
 import com.lifequest.app.domain.shop.ItemEffectType
 import com.lifequest.app.domain.shop.ShopCatalog
 import com.lifequest.app.domain.world.WorldCatalog
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.temporal.TemporalAdjusters
 
 /**
  * Luật chơi dạng hàm thuần: nhận GameState cũ, trả về GameState mới + các sự kiện.
@@ -17,19 +20,43 @@ object GameEngine {
 
     fun newGame(): GameState = GameState()
 
-    /** Hoàn thành quest: tự động nhận thưởng (XP, Gold) và gây sát thương lên Boss. */
-    fun completeQuest(state: GameState, questId: String): GameOutcome {
+    /**
+     * Gọi khi mở app hoặc quay lại app. Sang ngày mới thì làm mới quest Daily,
+     * sang tuần mới (thứ Hai) thì làm mới cả Weekly, bỏ lỡ một ngày thì mất streak.
+     * `today` được truyền vào thay vì gọi LocalDate.now() để hàm vẫn thuần và test được.
+     */
+    fun startDay(state: GameState, today: LocalDate): GameOutcome {
+        val todayEpoch = today.toEpochDay()
+        if (state.lastActiveEpochDay >= todayEpoch) return GameOutcome(state)
+
+        val firstLaunch = state.lastActiveEpochDay == GameState.NEVER
+        val newWeek = firstLaunch || weekStart(today) != weekStart(LocalDate.ofEpochDay(state.lastActiveEpochDay))
+        val resetIds = QuestCatalog.daily.map { it.id } + if (newWeek) QuestCatalog.weekly.map { it.id } else emptyList()
+        val streakBroken = state.lastQuestEpochDay < todayEpoch - 1
+
+        val newState = state.copy(
+            quests = state.quests.filterNot { it.questId in resetIds },
+            player = if (streakBroken) state.player.copy(streak = 0) else state.player,
+            lastActiveEpochDay = todayEpoch,
+        )
+        return GameOutcome(newState, if (firstLaunch) emptyList() else listOf(GameEvent.NewDay(weeklyReset = newWeek)))
+    }
+
+    /** Hoàn thành quest: tự động nhận thưởng (XP, Gold), cộng streak và gây sát thương lên Boss. */
+    fun completeQuest(state: GameState, questId: String, today: LocalDate): GameOutcome {
         val def = QuestCatalog.find(questId) ?: return GameOutcome(state, listOf(GameEvent.ActionFailed))
         if (state.isQuestDone(questId)) return GameOutcome(state)
 
         val quests = state.quests.filterNot { it.questId == questId } +
             QuestProgress(questId, QuestStatus.CLAIMED)
 
-        val rewarded = grantReward(state.copy(quests = quests), def.rewards.xp, def.rewards.gold)
-        if (def.rewards.bossDamage <= 0) return rewarded
+        val streaked = updateStreak(state.copy(quests = quests), today)
+        val rewarded = grantReward(streaked.state, def.rewards.xp, def.rewards.gold)
+        val events = streaked.events + rewarded.events
+        if (def.rewards.bossDamage <= 0) return GameOutcome(rewarded.state, events)
 
         val damaged = damageCurrentBoss(rewarded.state, def.rewards.bossDamage)
-        return GameOutcome(damaged.state, rewarded.events + damaged.events)
+        return GameOutcome(damaged.state, events + damaged.events)
     }
 
     fun damageCurrentBoss(state: GameState, damage: Int): GameOutcome {
@@ -96,6 +123,22 @@ object GameEngine {
 
     fun killBoss(state: GameState): GameOutcome =
         damageCurrentBoss(state, state.currentWorldProgress?.bossCurrentHp ?: 0)
+
+    private fun updateStreak(state: GameState, today: LocalDate): GameOutcome {
+        val todayEpoch = today.toEpochDay()
+        val streak = when (state.lastQuestEpochDay) {
+            todayEpoch -> return GameOutcome(state) // hôm nay đã tính rồi
+            todayEpoch - 1 -> state.player.streak + 1
+            else -> 1
+        }
+        val events = if (streak > 1) listOf(GameEvent.StreakExtended(streak)) else emptyList()
+        return GameOutcome(
+            state.copy(player = state.player.copy(streak = streak), lastQuestEpochDay = todayEpoch),
+            events,
+        )
+    }
+
+    private fun weekStart(date: LocalDate): LocalDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
     private fun grantReward(state: GameState, xp: Int, gold: Int): GameOutcome {
         val result = PlayerRules.addReward(state.player, xp, gold)

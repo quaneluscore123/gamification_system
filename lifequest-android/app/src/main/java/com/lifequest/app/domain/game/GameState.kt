@@ -18,6 +18,10 @@ data class GameState(
     val worlds: List<WorldProgress> = listOf(WorldCatalog.initialProgress(WorldCatalog.worlds.first())),
     val currentWorldIndex: Int = 0,
     val inventory: List<InventoryItem> = emptyList(),
+    /** Ngày (LocalDate.toEpochDay) gần nhất game được làm mới — dùng để reset quest Daily/Weekly. */
+    val lastActiveEpochDay: Long = NEVER,
+    /** Ngày gần nhất người chơi hoàn thành quest — dùng để tính streak. */
+    val lastQuestEpochDay: Long = NEVER,
 ) {
     val currentWorldDef: WorldDef
         get() = WorldCatalog.worlds[currentWorldIndex.coerceIn(WorldCatalog.worlds.indices)]
@@ -32,6 +36,10 @@ data class GameState(
         quests.find { it.questId == questId }?.status
 
     fun isQuestDone(questId: String): Boolean = questStatus(questId)?.isDone == true
+
+    companion object {
+        const val NEVER = -1L
+    }
 }
 
 /** Sự kiện để UI hiển thị thông báo (thay cho alert() bên bản web). */
@@ -40,6 +48,8 @@ sealed interface GameEvent {
     data class BossDefeated(val bossName: String) : GameEvent
     data class ItemBought(val itemName: String) : GameEvent
     data class ItemUsed(val itemName: String) : GameEvent
+    data class NewDay(val weeklyReset: Boolean) : GameEvent
+    data class StreakExtended(val days: Int) : GameEvent
     data object NotEnoughGold : GameEvent
     data object ActionFailed : GameEvent
 }

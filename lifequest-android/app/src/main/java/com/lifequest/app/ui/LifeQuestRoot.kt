@@ -133,6 +133,9 @@ private fun GameEvent.toMessage(): String = when (this) {
     is GameEvent.BossDefeated -> "🎉 Đã hạ gục Boss $bossName!"
     is GameEvent.ItemBought -> "Mua $itemName thành công! Đã chuyển vào Hành Trang."
     is GameEvent.ItemUsed -> "Đã sử dụng $itemName. Hiệu ứng đã được kích hoạt."
+    is GameEvent.NewDay ->
+        if (weeklyReset) "🌅 Tuần mới! Quest Daily và Weekly đã được làm mới." else "🌅 Ngày mới! Quest Daily đã được làm mới."
+    is GameEvent.StreakExtended -> "🔥 Chuỗi $days ngày liên tiếp!"
     GameEvent.NotEnoughGold -> "Bạn không đủ Vàng!"
     GameEvent.ActionFailed -> "Không thể thực hiện lúc này."
 }
