@@ -2,11 +2,8 @@ package com.lifequest.app.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -24,33 +21,40 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import com.lifequest.app.domain.game.GameEvent
 import com.lifequest.app.domain.game.GameState
-import com.lifequest.app.ui.components.CharacterCard
 import com.lifequest.app.ui.components.DevConsoleDialog
-import com.lifequest.app.ui.components.MentorAstra
 import com.lifequest.app.ui.inventory.inventorySection
+import com.lifequest.app.ui.navigation.DungeonsRoute
+import com.lifequest.app.ui.navigation.InventoryRoute
+import com.lifequest.app.ui.navigation.QuestsRoute
+import com.lifequest.app.ui.navigation.ShopRoute
+import com.lifequest.app.ui.navigation.TopLevelDestination
 import com.lifequest.app.ui.quest.questSection
 import com.lifequest.app.ui.shop.shopSection
 import com.lifequest.app.ui.theme.LqColors
 import com.lifequest.app.ui.world.worldSection
 
-enum class Tab(val icon: String, val label: String) {
-    WORLD("🏰", "Dungeons"),
-    QUESTS("📜", "Quests"),
-    INVENTORY("🎒", "Hành Trang"),
-    SHOP("🏪", "Cửa Hàng"),
-}
-
+/**
+ * GameViewModel được lấy ở đây, NGOÀI NavHost, nên nó gắn với Activity và được
+ * mọi màn hình dùng chung. ViewModel lấy bên trong composable<Route> thì chỉ sống
+ * cùng màn hình đó.
+ */
 @Composable
 fun LifeQuestRoot(viewModel: GameViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,14 +71,14 @@ fun LifeQuestRoot(viewModel: GameViewModel = hiltViewModel()) {
         GameUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator()
         }
-        is GameUiState.Ready -> GameScreen(state.game, viewModel, snackbarHostState)
+        is GameUiState.Ready -> GameScaffold(state.game, viewModel, snackbarHostState)
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GameScreen(game: GameState, viewModel: GameViewModel, snackbarHostState: SnackbarHostState) {
-    var activeTab by rememberSaveable { mutableStateOf(Tab.WORLD) }
+private fun GameScaffold(game: GameState, viewModel: GameViewModel, snackbarHostState: SnackbarHostState) {
+    val navController = rememberNavController()
     var showDevConsole by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -92,26 +96,25 @@ private fun GameScreen(game: GameState, viewModel: GameViewModel, snackbarHostSt
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
-        bottomBar = {
-            NavigationBar {
-                Tab.entries.forEach { tab ->
-                    NavigationBarItem(
-                        selected = tab == activeTab,
-                        onClick = { activeTab = tab },
-                        icon = { Text(tab.icon, style = MaterialTheme.typography.titleLarge) },
-                        label = { Text(tab.label) },
-                    )
-                }
-            }
-        },
+        bottomBar = { BottomBar(navController) },
     ) { innerPadding ->
-        LazyColumn(
+        NavHost(
+            navController = navController,
+            startDestination = DungeonsRoute,
             modifier = Modifier.padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
         ) {
-            item { MentorAstra(game.player.level) }
-            item { CharacterCard(game.player, Modifier.padding(vertical = 12.dp)) }
-            tabContent(activeTab, game, viewModel)
+            composable<DungeonsRoute> {
+                GameTabScreen(game) { worldSection(game, onFight = viewModel::completeQuest, onNextWorld = viewModel::nextWorld) }
+            }
+            composable<QuestsRoute> {
+                GameTabScreen(game) { questSection(game, onComplete = viewModel::completeQuest) }
+            }
+            composable<InventoryRoute> {
+                GameTabScreen(game) { inventorySection(game, onUse = viewModel::useItem) }
+            }
+            composable<ShopRoute> {
+                GameTabScreen(game) { shopSection(game, onBuy = viewModel::buyItem) }
+            }
         }
     }
 
@@ -126,11 +129,28 @@ private fun GameScreen(game: GameState, viewModel: GameViewModel, snackbarHostSt
     }
 }
 
-private fun LazyListScope.tabContent(tab: Tab, game: GameState, viewModel: GameViewModel) = when (tab) {
-    Tab.WORLD -> worldSection(game, onFight = viewModel::completeQuest, onNextWorld = viewModel::nextWorld)
-    Tab.QUESTS -> questSection(game, onComplete = viewModel::completeQuest)
-    Tab.INVENTORY -> inventorySection(game, onUse = viewModel::useItem)
-    Tab.SHOP -> shopSection(game, onBuy = viewModel::buyItem)
+@Composable
+private fun BottomBar(navController: NavHostController) {
+    val currentDestination = navController.currentBackStackEntryAsState().value?.destination
+
+    NavigationBar {
+        TopLevelDestination.entries.forEach { dest ->
+            NavigationBarItem(
+                selected = currentDestination?.hierarchy?.any { it.hasRoute(dest.route::class) } == true,
+                onClick = {
+                    navController.navigate(dest.route) {
+                        // Chuẩn cho bottom bar: không chồng nhiều bản sao màn hình lên back stack,
+                        // và giữ lại vị trí cuộn của từng tab khi chuyển qua lại
+                        popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                icon = { Text(dest.icon, style = MaterialTheme.typography.titleLarge) },
+                label = { Text(dest.label) },
+            )
+        }
+    }
 }
 
 private fun GameEvent.toMessage(): String = when (this) {
