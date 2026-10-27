@@ -49,7 +49,7 @@ fun CharacterCard(player: PlayerProgress, modifier: Modifier = Modifier) {
                 Text("Lv. ${player.level} | ${player.title}", color = LqColors.Primary, style = MaterialTheme.typography.bodyMedium)
                 StatBar(player.xp.toFloat() / requiredXp, LqColors.Primary)
                 Text(
-                    "XP: ${player.xp} / $requiredXp    💰 Gold: ${player.gold}",
+                    "XP: ${player.xp} / $requiredXp    💰 Gold: ${player.gold}    🔥 Streak: ${player.streak}",
                     style = MaterialTheme.typography.bodySmall,
                     color = LqColors.TextMuted,
                 )
@@ -72,6 +72,6 @@ private fun Avatar(emoji: String) {
 @Composable
 private fun CharacterCardPreview() {
     LifeQuestTheme {
-        CharacterCard(PlayerProgress(level = 3, xp = 80, gold = 120, title = "Beginner"))
+        CharacterCard(PlayerProgress(level = 3, xp = 80, gold = 120, title = "Beginner", streak = 4))
     }
 }

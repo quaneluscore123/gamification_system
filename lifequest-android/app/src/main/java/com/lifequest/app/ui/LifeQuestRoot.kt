@@ -30,6 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.lifequest.app.domain.game.GameEvent
 import com.lifequest.app.domain.game.GameState
@@ -57,6 +59,9 @@ fun LifeQuestRoot(viewModel: GameViewModel = hiltViewModel()) {
     LaunchedEffect(viewModel) {
         viewModel.events.collect { snackbarHostState.showSnackbar(it.toMessage()) }
     }
+
+    // Mỗi lần người dùng quay lại app, kiểm tra xem đã sang ngày mới chưa
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onAppResumed() }
 
     when (val state = uiState) {
         GameUiState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
