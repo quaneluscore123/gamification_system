@@ -46,6 +46,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 
     SettingsContent(
         settings = settings,
+        analyticsBackend = viewModel.analyticsBackend,
         permissionDenied = permissionDenied,
         onReminderToggle = { enabled ->
             if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -62,6 +63,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 @Composable
 fun SettingsContent(
     settings: UserSettings,
+    analyticsBackend: String,
     permissionDenied: Boolean,
     onReminderToggle: (Boolean) -> Unit,
     onHourChange: (delta: Int) -> Unit,
@@ -116,6 +118,12 @@ fun SettingsContent(
                 style = MaterialTheme.typography.bodySmall,
                 color = LqColors.TextMuted,
             )
+            Text(
+                "📈 Analytics: $analyticsBackend",
+                modifier = Modifier.padding(top = 4.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = LqColors.TextMuted,
+            )
         }
     }
 }
@@ -126,6 +134,7 @@ private fun SettingsContentPreview() {
     LifeQuestTheme {
         SettingsContent(
             UserSettings(reminderEnabled = true, reminderHour = 21),
+            analyticsBackend = "Firebase",
             permissionDenied = false,
             onReminderToggle = {},
             onHourChange = {},

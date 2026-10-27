@@ -11,3 +11,5 @@
 .kotlin/
 *.apk
 *.keystore
+# Cấu hình Firebase của riêng bạn, không đưa lên GitHub public
+app/google-services.json

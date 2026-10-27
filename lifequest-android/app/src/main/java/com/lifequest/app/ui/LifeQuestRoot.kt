@@ -152,6 +152,8 @@ private fun GameScaffold(game: GameState, viewModel: GameViewModel, snackbarHost
             onCheatGold = viewModel::cheatGold,
             onKillBoss = viewModel::killBoss,
             onReset = viewModel::resetSave,
+            // Crash thật để kiểm tra Crashlytics: mở lại app thì báo cáo mới được gửi lên
+            onTestCrash = { throw RuntimeException("Test crash from LifeQuest Dev Console") },
         )
     }
 }

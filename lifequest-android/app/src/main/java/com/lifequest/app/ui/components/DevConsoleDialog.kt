@@ -20,6 +20,7 @@ fun DevConsoleDialog(
     onCheatGold: () -> Unit,
     onKillBoss: () -> Unit,
     onReset: () -> Unit,
+    onTestCrash: () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -34,6 +35,11 @@ fun DevConsoleDialog(
                     modifier = Modifier.fillMaxWidth(),
                     colors = ButtonDefaults.buttonColors(containerColor = LqColors.Danger),
                 ) { Text("Reset Save") }
+                Button(
+                    onClick = onTestCrash,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = LqColors.CardRaised),
+                ) { Text("💥 Test Crash (Crashlytics)") }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Đóng") } },

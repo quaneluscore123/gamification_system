@@ -7,6 +7,13 @@ plugins {
     alias(libs.plugins.hilt)
 }
 
+// Firebase chỉ bật khi có file app/google-services.json (tải từ Firebase Console, xem docs/FIREBASE_SETUP.md).
+// Không có file thì app vẫn build và chạy bình thường, sự kiện analytics chỉ được ghi ra Logcat.
+if (file("google-services.json").exists()) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+    apply(plugin = libs.plugins.firebase.crashlytics.get().pluginId)
+}
+
 android {
     namespace = "com.lifequest.app"
     compileSdk = 36
@@ -75,6 +82,11 @@ dependencies {
     implementation(libs.retrofit)
     implementation(libs.retrofit.kotlinx.serialization)
     implementation(libs.okhttp.logging)
+
+    // BOM (Bill of Materials) chọn sẵn phiên bản các thư viện Firebase tương thích với nhau
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.crashlytics)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 

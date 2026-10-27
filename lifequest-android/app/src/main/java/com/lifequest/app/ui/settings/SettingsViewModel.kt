@@ -2,6 +2,7 @@ package com.lifequest.app.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifequest.app.domain.analytics.AnalyticsTracker
 import com.lifequest.app.domain.settings.ReminderScheduler
 import com.lifequest.app.domain.settings.SettingsRepository
 import com.lifequest.app.domain.settings.UserSettings
@@ -16,7 +17,10 @@ import javax.inject.Inject
 class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository,
     private val scheduler: ReminderScheduler,
+    analytics: AnalyticsTracker,
 ) : ViewModel() {
+
+    val analyticsBackend: String = analytics.backendName
 
     val settings: StateFlow<UserSettings> =
         repository.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UserSettings())

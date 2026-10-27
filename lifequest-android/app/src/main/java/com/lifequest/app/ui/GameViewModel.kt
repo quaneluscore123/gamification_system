@@ -3,6 +3,7 @@ package com.lifequest.app.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lifequest.app.domain.game.GameRepository
+import com.lifequest.app.domain.analytics.AnalyticsTracker
 import com.lifequest.app.domain.game.GameEngine
 import com.lifequest.app.domain.game.GameEvent
 import com.lifequest.app.domain.game.GameOutcome
@@ -31,6 +32,7 @@ sealed interface GameUiState {
 class GameViewModel @Inject constructor(
     private val repository: GameRepository,
     private val history: HistoryRepository,
+    private val analytics: AnalyticsTracker,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -56,6 +58,7 @@ class GameViewModel @Inject constructor(
         val changed = dispatch { GameEngine.completeQuest(it, questId, today()) }
         val def = QuestCatalog.find(questId) ?: return
         if (changed) {
+            analytics.logEvent("quest_complete", mapOf("quest_id" to def.id, "quest_type" to def.type.name))
             viewModelScope.launch {
                 history.record(QuestLog(def.id, def.title, def.rewards.xp, def.rewards.gold, clock.millis()))
             }
@@ -97,6 +100,15 @@ class GameViewModel @Inject constructor(
 
     private fun today(): LocalDate = LocalDate.now(clock)
 
+    private fun trackEvent(event: GameEvent) = when (event) {
+        // "level_up" là tên sự kiện chuẩn của Firebase, có sẵn báo cáo riêng
+        is GameEvent.LevelUp -> analytics.logEvent("level_up", mapOf("level" to event.level))
+        is GameEvent.BossDefeated -> analytics.logEvent("boss_defeated", mapOf("boss" to event.bossName))
+        is GameEvent.ItemBought -> analytics.logEvent("item_bought", mapOf("item" to event.itemName))
+        is GameEvent.StreakExtended -> analytics.logEvent("streak_extended", mapOf("days" to event.days))
+        else -> Unit
+    }
+
     /**
      * Áp dụng một luật chơi lên state hiện tại, lưu lại và phát sự kiện cho UI.
      * Trả về true nếu state thay đổi.
@@ -109,7 +121,10 @@ class GameViewModel @Inject constructor(
             _uiState.value = GameUiState.Ready(outcome.state)
             viewModelScope.launch { repository.save(outcome.state) }
         }
-        outcome.events.forEach { _events.trySend(it) }
+        outcome.events.forEach {
+            _events.trySend(it)
+            trackEvent(it)
+        }
         return changed
     }
 
