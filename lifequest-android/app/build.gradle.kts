@@ -17,6 +17,10 @@ android {
         targetSdk = 36
         versionCode = 1
         versionName = "1.0.0"
+
+        // Đọc trong code qua BuildConfig.QUOTE_API_BASE_URL. Muốn đổi server theo môi trường
+        // (dev/prod) thì khai báo lại field này trong từng buildType hoặc productFlavor.
+        buildConfigField("String", "QUOTE_API_BASE_URL", "\"https://dummyjson.com/\"")
     }
 
     buildTypes {
@@ -33,6 +37,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -65,6 +70,10 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlinx.serialization)
+    implementation(libs.okhttp.logging)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 
