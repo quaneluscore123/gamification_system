@@ -7,14 +7,18 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.lifequest.app.domain.game.GameEngine
 import com.lifequest.app.domain.game.GameRepository
 import com.lifequest.app.domain.game.GameState
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
+import javax.inject.Inject
 
 private val Context.dataStore by preferencesDataStore(name = "lifequest")
 
 /** Lưu toàn bộ GameState dưới dạng JSON trong DataStore (thay cho LocalStorage). */
-class DataStoreGameRepository(private val context: Context) : GameRepository {
+class DataStoreGameRepository @Inject constructor(
+    @ApplicationContext private val context: Context,
+) : GameRepository {
 
     private val json = Json { ignoreUnknownKeys = true }
 

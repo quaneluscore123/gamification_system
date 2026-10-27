@@ -29,8 +29,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lifequest.app.domain.game.GameEvent
 import com.lifequest.app.domain.game.GameState
 import com.lifequest.app.ui.components.CharacterCard
@@ -50,7 +50,7 @@ enum class Tab(val icon: String, val label: String) {
 }
 
 @Composable
-fun LifeQuestRoot(viewModel: GameViewModel = viewModel(factory = GameViewModel.Factory)) {
+fun LifeQuestRoot(viewModel: GameViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
