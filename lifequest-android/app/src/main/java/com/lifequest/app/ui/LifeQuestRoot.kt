@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -43,12 +44,14 @@ import com.lifequest.app.ui.inventory.inventorySection
 import com.lifequest.app.ui.navigation.DungeonsRoute
 import com.lifequest.app.ui.navigation.InventoryRoute
 import com.lifequest.app.ui.navigation.QuestsRoute
+import com.lifequest.app.ui.navigation.SettingsRoute
 import com.lifequest.app.ui.navigation.ShopRoute
 import com.lifequest.app.ui.navigation.StatsRoute
 import com.lifequest.app.ui.navigation.TopLevelDestination
 import com.lifequest.app.ui.quest.questSection
 import com.lifequest.app.ui.quote.QuoteCard
 import com.lifequest.app.ui.quote.QuoteViewModel
+import com.lifequest.app.ui.settings.SettingsScreen
 import com.lifequest.app.ui.shop.shopSection
 import com.lifequest.app.ui.stats.StatsScreen
 import com.lifequest.app.ui.theme.LqColors
@@ -83,6 +86,8 @@ fun LifeQuestRoot(viewModel: GameViewModel = hiltViewModel()) {
 @Composable
 private fun GameScaffold(game: GameState, viewModel: GameViewModel, snackbarHostState: SnackbarHostState) {
     val navController = rememberNavController()
+    val currentDestination = navController.currentBackStackEntryAsState().value?.destination
+    val onSettings = currentDestination?.hasRoute(SettingsRoute::class) == true
     var showDevConsole by remember { mutableStateOf(false) }
 
     Scaffold(
@@ -96,11 +101,21 @@ private fun GameScaffold(game: GameState, viewModel: GameViewModel, snackbarHost
                         Text("The Backend Journey", color = LqColors.TextMuted, style = MaterialTheme.typography.labelMedium)
                     }
                 },
-                actions = { TextButton(onClick = { showDevConsole = true }) { Text("🛠️ Dev") } },
+                navigationIcon = {
+                    if (onSettings) {
+                        IconButton(onClick = { navController.popBackStack() }) { Text("⬅️") }
+                    }
+                },
+                actions = {
+                    TextButton(onClick = { showDevConsole = true }) { Text("🛠️ Dev") }
+                    if (!onSettings) {
+                        IconButton(onClick = { navController.navigate(SettingsRoute) }) { Text("⚙️") }
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background),
             )
         },
-        bottomBar = { BottomBar(navController) },
+        bottomBar = { if (!onSettings) BottomBar(navController) },
     ) { innerPadding ->
         NavHost(
             navController = navController,
@@ -126,6 +141,7 @@ private fun GameScaffold(game: GameState, viewModel: GameViewModel, snackbarHost
             }
             // StatsViewModel được tạo bên trong composable<StatsRoute> nên chỉ sống cùng màn hình này
             composable<StatsRoute> { StatsScreen(game.player) }
+            composable<SettingsRoute> { SettingsScreen() }
         }
     }
 

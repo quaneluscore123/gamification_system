@@ -23,6 +23,10 @@ data object ShopRoute
 @Serializable
 data object StatsRoute
 
+/** Không nằm ở bottom bar: mở từ nút ⚙️ trên thanh tiêu đề, có nút quay lại. */
+@Serializable
+data object SettingsRoute
+
 /** Các tab ở thanh điều hướng dưới cùng. */
 enum class TopLevelDestination(val route: Any, val icon: String, val label: String) {
     DUNGEONS(DungeonsRoute, "🏰", "Dungeons"),
