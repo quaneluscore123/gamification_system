@@ -1,58 +1,91 @@
 # ⚔️ LifeQuest — Android (Kotlin + Jetpack Compose)
 
-Ứng dụng RPG gamification biến hành trình học Java Backend thành một cuộc phiêu lưu: mỗi module là một **World**, mỗi World có một **Boss**, mỗi bài học là một **Quest**. Đây là bản Android native, chuyển từ bản web React + TypeScript trong thư mục [`../lifequest`](../lifequest).
+![Android CI](https://github.com/quaneluscore123/gamification_system/actions/workflows/android.yml/badge.svg)
+
+Ứng dụng RPG gamification biến hành trình học Java Backend thành một cuộc phiêu lưu: mỗi module là một **World**,
+mỗi World có một **Boss**, mỗi bài học là một **Quest**. Đây là bản Android native, chuyển từ bản web React + TypeScript
+trong thư mục [`../lifequest`](../lifequest).
 
 ## Tính năng
 
-- **Dungeons**: 3 World (Java Fundamentals ➔ Database & SQL ➔ Spring Boot Core). Hoàn thành room sẽ gây sát thương lên Boss, hạ Boss thì mở khóa World tiếp theo.
-- **Quests**: nhiệm vụ Daily / Weekly, có thưởng XP, Gold và sát thương lên Boss.
-- **Player progression**: lên level (XP cần cho mỗi level tăng ×1.5), danh hiệu (Beginner ➔ Backend Engineer), ghi lại Legacy khi hạ Boss.
-- **Shop & Hành Trang**: mua vật phẩm bằng Gold, dùng để nhận XP, Gold hoặc gây sát thương lên Boss.
-- **Lưu tự động** bằng DataStore, không mất tiến trình khi tắt app.
-- **Dev Console** để test nhanh (+XP, +Gold, Kill Boss, Reset).
+- **Dungeons**: 4 World (Java → SQL → Spring Boot → DevOps). Hoàn thành room gây sát thương lên Boss; hạ Boss mở khóa World mới.
+- **Quests Daily / Weekly**: tự làm mới mỗi ngày / mỗi thứ Hai, có **streak** 🔥 ngày liên tiếp.
+- **Quote of the day**: lấy từ REST API, cache để dùng offline.
+- **Thống kê**: tổng quest/XP/Gold, Legacy Monument, lịch sử hoàn thành (Room).
+- **Shop & Hành Trang**: mua và dùng vật phẩm bằng Gold.
+- **Nhắc nhở hằng ngày** bằng WorkManager + notification, chọn giờ trong Cài đặt.
+- **Firebase Analytics + Crashlytics** (tùy chọn, bật khi có `google-services.json`).
+- **Dev Console**: +XP, +Gold, Kill Boss, Reset, Test Crash.
 
 ## Công nghệ
 
 | Thành phần | Công nghệ |
 |---|---|
-| Ngôn ngữ | Kotlin 2.2 |
-| UI | Jetpack Compose + Material 3 |
-| Kiến trúc | MVVM + tầng domain thuần Kotlin (theo DDD của bản web) |
-| State | `StateFlow` + `collectAsStateWithLifecycle` |
-| Lưu trữ | Jetpack DataStore + kotlinx.serialization (JSON) |
-| DI | Thủ công qua `AppContainer` |
-| Test | JUnit 4 cho domain logic |
-| Build | Gradle Kotlin DSL + version catalog, AGP 8.12, minSdk 26 / targetSdk 36 |
+| Ngôn ngữ | Kotlin 2.2, Coroutines, Flow |
+| UI | Jetpack Compose, Material 3, Navigation Compose (type-safe routes) |
+| Kiến trúc | MVVM + UDF, tầng domain thuần Kotlin, Repository pattern |
+| DI | Hilt (KSP) |
+| Lưu trữ | Room (lịch sử), Preferences DataStore (save game, cài đặt, cache) |
+| Mạng | Retrofit 3, OkHttp, kotlinx.serialization |
+| Việc nền | WorkManager |
+| Giám sát | Firebase Analytics, Crashlytics |
+| Test | JUnit 4, kotlinx-coroutines-test, Turbine, fake repositories |
+| Build | Gradle 8.13, AGP 8.12, version catalog, R8, minSdk 26 / targetSdk 36 |
+| CI | GitHub Actions: test, lint, build APK |
 
 ## Kiến trúc
 
 ```
 app/src/main/java/com/lifequest/app/
-├── domain/                 # Kotlin thuần, không phụ thuộc Android → unit test được
-│   ├── game/               # GameState, GameEngine (luật chơi), GameBalance
-│   ├── player/             # PlayerProgress, PlayerRules (XP, level, title)
-│   ├── quest/              # QuestDef, QuestCatalog
-│   ├── world/              # WorldDef, WorldCatalog
-│   ├── shop/               # ItemDef, ShopCatalog
-│   └── inventory/          # InventoryItem, InventoryRules
-├── data/                   # GameRepository + bản cài đặt DataStore
-├── ui/                     # GameViewModel, các màn hình Compose, theme
-├── LifeQuestApp.kt         # Application + AppContainer (DI)
-└── MainActivity.kt
+├── domain/                 # Kotlin thuần, không import Android → unit test được
+│   ├── game/               # GameState, GameEngine (luật chơi, daily reset, streak), GameRepository
+│   ├── player/ quest/ world/ shop/ inventory/
+│   ├── history/            # QuestLog + HistoryRepository
+│   ├── quote/              # Quote + QuoteRepository
+│   ├── settings/           # UserSettings, SettingsRepository, ReminderScheduler
+│   └── analytics/          # AnalyticsTracker
+├── data/                   # Cài đặt các interface ở domain
+│   ├── local/              # Room: Entity, Dao, Database
+│   ├── remote/             # Retrofit: QuoteApi, DTO
+│   ├── analytics/          # Firebase / Logcat tracker
+│   └── *Repository.kt      # DataStore, Room, cache-first quote
+├── work/                   # WorkManager: ReminderWorker, scheduler, notification
+├── di/                     # Hilt modules
+├── ui/                     # Compose screens + ViewModels, navigation, theme
+├── LifeQuestApp.kt         # @HiltAndroidApp
+└── MainActivity.kt         # @AndroidEntryPoint
 ```
 
-Luồng dữ liệu một chiều:
-
 ```
-UI (Compose) --action--> GameViewModel --GameEngine.xxx(state)--> GameState mới
-     ^                         |                                       |
-     └──── StateFlow ──────────┘<──────────────────────────────────────┘
-                               └── repository.save(state) → DataStore
+UI (Compose) ──action──▶ ViewModel ──▶ GameEngine (hàm thuần) ──▶ state mới
+     ▲                      │                                        │
+     └──── StateFlow ◀──────┴──── Repository (interface ở domain) ◀──┘
+                                       │ Hilt @Binds
+                         DataStore · Room · Retrofit · WorkManager · Firebase
 ```
 
-`GameEngine` gồm các hàm thuần `(GameState) -> GameOutcome(state mới, sự kiện)`. Bản web chia logic qua 5 Context Provider gọi chéo nhau; bản Android gom về một state bất biến nên tránh được lỗi state cũ (stale state) và test dễ hơn.
+## Bắt đầu
 
-### Bản React tương ứng với gì trong Kotlin
+Yêu cầu: Android Studio (JDK 17), Android SDK 36.
+
+```bash
+./gradlew testDebugUnitTest   # 36 unit test
+./gradlew assembleDebug       # build APK debug
+./gradlew installDebug        # cài lên máy đang kết nối
+```
+
+Trên Windows dùng `.\gradlew.bat`.
+
+## Tài liệu
+
+| Tài liệu | Nội dung |
+|---|---|
+| [docs/RUNNING.md](docs/RUNNING.md) | Chạy trên máy ảo / điện thoại, chỉnh kích thước emulator, các lệnh Gradle |
+| [docs/FIREBASE_SETUP.md](docs/FIREBASE_SETUP.md) | Tạo project Firebase, tải `google-services.json`, DebugView, Crashlytics |
+| [docs/RELEASE.md](docs/RELEASE.md) | Tạo keystore, build AAB, đưa lên Google Play |
+| [docs/LEARNING_GUIDE.md](docs/LEARNING_GUIDE.md) | Đọc code theo từng commit, câu hỏi tự kiểm tra, bài tập |
+
+## Bản React tương ứng với gì trong Kotlin
 
 | React (web) | Kotlin (Android) |
 |---|---|
@@ -62,35 +95,17 @@ UI (Compose) --action--> GameViewModel --GameEngine.xxx(state)--> GameState mớ
 | `LocalStorageService` | `DataStoreGameRepository` |
 | `useState` / `useEffect` | `remember` / `LaunchedEffect` |
 | `alert()` | `Snackbar` qua `GameEvent` |
+| React Router | Navigation Compose |
 | Component `.tsx` + `.css` | Hàm `@Composable` + `LifeQuestTheme` |
 
-## Chạy dự án
+## Lộ trình
 
-Yêu cầu: JDK 17, Android SDK (platform 36). Cách dễ nhất là mở thư mục này bằng **Android Studio**.
-
-```bash
-# Chạy unit test
-./gradlew testDebugUnitTest
-
-# Build APK debug → app/build/outputs/apk/debug/app-debug.apk
-./gradlew assembleDebug
-
-# Cài lên điện thoại/emulator đang kết nối
-./gradlew installDebug
-
-# Build APK release → app/build/outputs/apk/release/app-release.apk
-./gradlew assembleRelease
-```
-
-Trên Windows dùng `gradlew.bat` thay cho `./gradlew` nếu chạy trong CMD/PowerShell.
-
-> APK release hiện được ký bằng debug key để cài thử trên máy thật. Muốn đưa lên Google Play cần tạo keystore riêng.
-
-## Lộ trình tiếp theo
-
-- [ ] Thêm Navigation Compose, mỗi tab là một route riêng
-- [ ] Chuyển DI sang Hilt
-- [ ] Chuyển lưu trữ sang Room (bảng quest, world, inventory)
-- [ ] Gọi Spring Boot REST API bằng Retrofit + xử lý loading/error/offline
-- [ ] Reset Daily quest theo ngày, tính streak
-- [ ] Viết UI test cho Compose và test cho ViewModel
+- [x] Navigation Compose, mỗi tab là một route
+- [x] DI bằng Hilt
+- [x] Room cho lịch sử quest
+- [x] Gọi REST API bằng Retrofit + xử lý loading/error/offline
+- [x] Reset Daily quest theo ngày, tính streak
+- [x] Test ViewModel, CI
+- [ ] Màn chi tiết quest (route có tham số), Room migration, HiltWorker: xem bài tập trong [LEARNING_GUIDE](docs/LEARNING_GUIDE.md)
+- [ ] Lưu game lên Firestore, đăng nhập Firebase Auth
+- [ ] Gọi Spring Boot API của chính mình
