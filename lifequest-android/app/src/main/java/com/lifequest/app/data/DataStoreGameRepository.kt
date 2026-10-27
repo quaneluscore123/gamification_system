@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.lifequest.app.domain.game.GameEngine
+import com.lifequest.app.domain.game.GameRepository
 import com.lifequest.app.domain.game.GameState
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.SerializationException

@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.lifequest.app.LifeQuestApp
-import com.lifequest.app.data.GameRepository
+import com.lifequest.app.domain.game.GameRepository
 import com.lifequest.app.domain.game.GameEngine
 import com.lifequest.app.domain.game.GameEvent
 import com.lifequest.app.domain.game.GameOutcome

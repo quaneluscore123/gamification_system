@@ -2,7 +2,7 @@ package com.lifequest.app
 
 import android.app.Application
 import com.lifequest.app.data.DataStoreGameRepository
-import com.lifequest.app.data.GameRepository
+import com.lifequest.app.domain.game.GameRepository
 
 /** DI thủ công: một chỗ duy nhất tạo các dependency dùng chung. */
 class AppContainer(app: Application) {
