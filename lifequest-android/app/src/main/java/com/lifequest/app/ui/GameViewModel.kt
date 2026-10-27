@@ -7,6 +7,9 @@ import com.lifequest.app.domain.game.GameEngine
 import com.lifequest.app.domain.game.GameEvent
 import com.lifequest.app.domain.game.GameOutcome
 import com.lifequest.app.domain.game.GameState
+import com.lifequest.app.domain.history.HistoryRepository
+import com.lifequest.app.domain.history.QuestLog
+import com.lifequest.app.domain.quest.QuestCatalog
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +30,7 @@ sealed interface GameUiState {
 @HiltViewModel
 class GameViewModel @Inject constructor(
     private val repository: GameRepository,
+    private val history: HistoryRepository,
     private val clock: Clock,
 ) : ViewModel() {
 
@@ -44,19 +48,48 @@ class GameViewModel @Inject constructor(
     }
 
     /** Làm mới quest nếu đã sang ngày mới (kể cả khi app để mở qua đêm). */
-    fun onAppResumed() = dispatch { GameEngine.startDay(it, today()) }
+    fun onAppResumed() {
+        dispatch { GameEngine.startDay(it, today()) }
+    }
 
-    fun completeQuest(questId: String) = dispatch { GameEngine.completeQuest(it, questId, today()) }
-    fun buyItem(itemId: String) = dispatch { GameEngine.buyItem(it, itemId) }
-    fun useItem(itemId: String) = dispatch { GameEngine.useItem(it, itemId) }
-    fun nextWorld() = dispatch { GameOutcome(GameEngine.nextWorld(it)) }
-    fun cheatXp() = dispatch(GameEngine::cheatXp)
-    fun cheatGold() = dispatch(GameEngine::cheatGold)
-    fun killBoss() = dispatch(GameEngine::killBoss)
+    fun completeQuest(questId: String) {
+        val changed = dispatch { GameEngine.completeQuest(it, questId, today()) }
+        val def = QuestCatalog.find(questId) ?: return
+        if (changed) {
+            viewModelScope.launch {
+                history.record(QuestLog(def.id, def.title, def.rewards.xp, def.rewards.gold, clock.millis()))
+            }
+        }
+    }
+
+    fun buyItem(itemId: String) {
+        dispatch { GameEngine.buyItem(it, itemId) }
+    }
+
+    fun useItem(itemId: String) {
+        dispatch { GameEngine.useItem(it, itemId) }
+    }
+
+    fun nextWorld() {
+        dispatch { GameOutcome(GameEngine.nextWorld(it)) }
+    }
+
+    fun cheatXp() {
+        dispatch(GameEngine::cheatXp)
+    }
+
+    fun cheatGold() {
+        dispatch(GameEngine::cheatGold)
+    }
+
+    fun killBoss() {
+        dispatch(GameEngine::killBoss)
+    }
 
     fun resetSave() {
         viewModelScope.launch {
             repository.clear()
+            history.clear()
             _uiState.value = GameUiState.Ready(GameEngine.newGame())
             onAppResumed()
         }
@@ -64,15 +97,20 @@ class GameViewModel @Inject constructor(
 
     private fun today(): LocalDate = LocalDate.now(clock)
 
-    /** Áp dụng một luật chơi lên state hiện tại, lưu lại và phát sự kiện cho UI. */
-    private fun dispatch(action: (GameState) -> GameOutcome) {
-        val current = (_uiState.value as? GameUiState.Ready)?.game ?: return
+    /**
+     * Áp dụng một luật chơi lên state hiện tại, lưu lại và phát sự kiện cho UI.
+     * Trả về true nếu state thay đổi.
+     */
+    private fun dispatch(action: (GameState) -> GameOutcome): Boolean {
+        val current = (_uiState.value as? GameUiState.Ready)?.game ?: return false
         val outcome = action(current)
-        if (outcome.state != current) {
+        val changed = outcome.state != current
+        if (changed) {
             _uiState.value = GameUiState.Ready(outcome.state)
             viewModelScope.launch { repository.save(outcome.state) }
         }
         outcome.events.forEach { _events.trySend(it) }
+        return changed
     }
 
 }

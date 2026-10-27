@@ -1,7 +1,9 @@
 package com.lifequest.app.di
 
 import com.lifequest.app.data.DataStoreGameRepository
+import com.lifequest.app.data.RoomHistoryRepository
 import com.lifequest.app.domain.game.GameRepository
+import com.lifequest.app.domain.history.HistoryRepository
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -19,4 +21,8 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindGameRepository(impl: DataStoreGameRepository): GameRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindHistoryRepository(impl: RoomHistoryRepository): HistoryRepository
 }
