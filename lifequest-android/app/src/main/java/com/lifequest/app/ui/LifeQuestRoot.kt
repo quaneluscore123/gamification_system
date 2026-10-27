@@ -44,9 +44,11 @@ import com.lifequest.app.ui.navigation.DungeonsRoute
 import com.lifequest.app.ui.navigation.InventoryRoute
 import com.lifequest.app.ui.navigation.QuestsRoute
 import com.lifequest.app.ui.navigation.ShopRoute
+import com.lifequest.app.ui.navigation.StatsRoute
 import com.lifequest.app.ui.navigation.TopLevelDestination
 import com.lifequest.app.ui.quest.questSection
 import com.lifequest.app.ui.shop.shopSection
+import com.lifequest.app.ui.stats.StatsScreen
 import com.lifequest.app.ui.theme.LqColors
 import com.lifequest.app.ui.world.worldSection
 
@@ -115,6 +117,8 @@ private fun GameScaffold(game: GameState, viewModel: GameViewModel, snackbarHost
             composable<ShopRoute> {
                 GameTabScreen(game) { shopSection(game, onBuy = viewModel::buyItem) }
             }
+            // StatsViewModel được tạo bên trong composable<StatsRoute> nên chỉ sống cùng màn hình này
+            composable<StatsRoute> { StatsScreen(game.player) }
         }
     }
 

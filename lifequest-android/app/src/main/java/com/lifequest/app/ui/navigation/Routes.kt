@@ -20,10 +20,14 @@ data object InventoryRoute
 @Serializable
 data object ShopRoute
 
+@Serializable
+data object StatsRoute
+
 /** Các tab ở thanh điều hướng dưới cùng. */
 enum class TopLevelDestination(val route: Any, val icon: String, val label: String) {
     DUNGEONS(DungeonsRoute, "🏰", "Dungeons"),
     QUESTS(QuestsRoute, "📜", "Quests"),
     INVENTORY(InventoryRoute, "🎒", "Hành Trang"),
     SHOP(ShopRoute, "🏪", "Cửa Hàng"),
+    STATS(StatsRoute, "📊", "Thống kê"),
 }
