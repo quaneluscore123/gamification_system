@@ -47,6 +47,8 @@ import com.lifequest.app.ui.navigation.ShopRoute
 import com.lifequest.app.ui.navigation.StatsRoute
 import com.lifequest.app.ui.navigation.TopLevelDestination
 import com.lifequest.app.ui.quest.questSection
+import com.lifequest.app.ui.quote.QuoteCard
+import com.lifequest.app.ui.quote.QuoteViewModel
 import com.lifequest.app.ui.shop.shopSection
 import com.lifequest.app.ui.stats.StatsScreen
 import com.lifequest.app.ui.theme.LqColors
@@ -109,7 +111,12 @@ private fun GameScaffold(game: GameState, viewModel: GameViewModel, snackbarHost
                 GameTabScreen(game) { worldSection(game, onFight = viewModel::completeQuest, onNextWorld = viewModel::nextWorld) }
             }
             composable<QuestsRoute> {
-                GameTabScreen(game) { questSection(game, onComplete = viewModel::completeQuest) }
+                val quoteViewModel: QuoteViewModel = hiltViewModel()
+                val quoteState by quoteViewModel.uiState.collectAsStateWithLifecycle()
+                GameTabScreen(game) {
+                    item(key = "quote") { QuoteCard(quoteState, onRefresh = quoteViewModel::refresh) }
+                    questSection(game, onComplete = viewModel::completeQuest)
+                }
             }
             composable<InventoryRoute> {
                 GameTabScreen(game) { inventorySection(game, onUse = viewModel::useItem) }
