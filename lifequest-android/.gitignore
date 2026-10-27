@@ -11,5 +11,7 @@
 .kotlin/
 *.apk
 *.keystore
+*.jks
+keystore.properties
 # Cấu hình Firebase của riêng bạn, không đưa lên GitHub public
 app/google-services.json

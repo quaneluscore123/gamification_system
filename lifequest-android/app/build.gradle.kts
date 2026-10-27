@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -12,6 +14,12 @@ plugins {
 if (file("google-services.json").exists()) {
     apply(plugin = libs.plugins.google.services.get().pluginId)
     apply(plugin = libs.plugins.firebase.crashlytics.get().pluginId)
+}
+
+// Thông tin keystore để ký bản release, đọc từ lifequest-android/keystore.properties (KHÔNG commit).
+// Mẫu: keystore.properties.example. Hướng dẫn tạo keystore: docs/RELEASE.md
+val keystoreProperties = rootProject.file("keystore.properties").takeIf { it.exists() }?.let { file ->
+    Properties().apply { file.inputStream().use { load(it) } }
 }
 
 android {
@@ -30,12 +38,25 @@ android {
         buildConfigField("String", "QUOTE_API_BASE_URL", "\"https://dummyjson.com/\"")
     }
 
+    signingConfigs {
+        if (keystoreProperties != null) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Ký bằng debug key để cài thử APK release trên máy thật. Khi lên Play Store cần keystore riêng.
-            signingConfig = signingConfigs.getByName("debug")
+            // Có keystore.properties thì ký bằng key thật (để lên Google Play),
+            // chưa có thì tạm ký bằng debug key để vẫn cài thử được trên máy.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {
