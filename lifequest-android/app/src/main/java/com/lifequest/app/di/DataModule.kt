@@ -7,7 +7,9 @@ import com.lifequest.app.data.RoomHistoryRepository
 import com.lifequest.app.domain.game.GameRepository
 import com.lifequest.app.domain.history.HistoryRepository
 import com.lifequest.app.domain.quote.QuoteRepository
+import com.lifequest.app.domain.settings.ReminderScheduler
 import com.lifequest.app.domain.settings.SettingsRepository
+import com.lifequest.app.work.WorkManagerReminderScheduler
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -37,4 +39,7 @@ abstract class DataModule {
     @Binds
     @Singleton
     abstract fun bindSettingsRepository(impl: DataStoreSettingsRepository): SettingsRepository
+
+    @Binds
+    abstract fun bindReminderScheduler(impl: WorkManagerReminderScheduler): ReminderScheduler
 }

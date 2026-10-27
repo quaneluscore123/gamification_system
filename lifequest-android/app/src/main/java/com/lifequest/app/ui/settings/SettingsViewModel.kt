@@ -2,6 +2,7 @@ package com.lifequest.app.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lifequest.app.domain.settings.ReminderScheduler
 import com.lifequest.app.domain.settings.SettingsRepository
 import com.lifequest.app.domain.settings.UserSettings
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -14,6 +15,7 @@ import javax.inject.Inject
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val repository: SettingsRepository,
+    private val scheduler: ReminderScheduler,
 ) : ViewModel() {
 
     val settings: StateFlow<UserSettings> =
@@ -21,10 +23,12 @@ class SettingsViewModel @Inject constructor(
 
     fun setReminderEnabled(enabled: Boolean) {
         viewModelScope.launch { repository.setReminderEnabled(enabled) }
+        if (enabled) scheduler.schedule(settings.value.reminderHour) else scheduler.cancel()
     }
 
     fun changeReminderHour(delta: Int) {
         val hour = Math.floorMod(settings.value.reminderHour + delta, 24)
         viewModelScope.launch { repository.setReminderHour(hour) }
+        if (settings.value.reminderEnabled) scheduler.schedule(hour)
     }
 }

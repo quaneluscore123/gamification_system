@@ -1,5 +1,9 @@
 package com.lifequest.app.ui.settings
 
+import android.Manifest
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +16,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -29,9 +36,24 @@ import com.lifequest.app.ui.theme.LqColors
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel = hiltViewModel()) {
     val settings by viewModel.settings.collectAsStateWithLifecycle()
+    var permissionDenied by rememberSaveable { mutableStateOf(false) }
+
+    // Hộp thoại xin quyền của hệ thống; kết quả trả về qua callback
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        permissionDenied = !granted
+        viewModel.setReminderEnabled(granted)
+    }
+
     SettingsContent(
         settings = settings,
-        onReminderToggle = viewModel::setReminderEnabled,
+        permissionDenied = permissionDenied,
+        onReminderToggle = { enabled ->
+            if (enabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            } else {
+                viewModel.setReminderEnabled(enabled)
+            }
+        },
         onHourChange = viewModel::changeReminderHour,
         modifier = modifier,
     )
@@ -40,6 +62,7 @@ fun SettingsScreen(modifier: Modifier = Modifier, viewModel: SettingsViewModel =
 @Composable
 fun SettingsContent(
     settings: UserSettings,
+    permissionDenied: Boolean,
     onReminderToggle: (Boolean) -> Unit,
     onHourChange: (delta: Int) -> Unit,
     modifier: Modifier = Modifier,
@@ -62,6 +85,14 @@ fun SettingsContent(
                     )
                 }
                 Switch(checked = settings.reminderEnabled, onCheckedChange = onReminderToggle)
+            }
+            if (permissionDenied) {
+                Text(
+                    "Bạn đã từ chối quyền thông báo. Vào Cài đặt hệ thống → Ứng dụng → LifeQuest → Thông báo để bật lại.",
+                    modifier = Modifier.padding(top = 8.dp),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LqColors.Danger,
+                )
             }
             if (settings.reminderEnabled) {
                 Row(
@@ -93,6 +124,11 @@ fun SettingsContent(
 @Composable
 private fun SettingsContentPreview() {
     LifeQuestTheme {
-        SettingsContent(UserSettings(reminderEnabled = true, reminderHour = 21), onReminderToggle = {}, onHourChange = {})
+        SettingsContent(
+            UserSettings(reminderEnabled = true, reminderHour = 21),
+            permissionDenied = false,
+            onReminderToggle = {},
+            onHourChange = {},
+        )
     }
 }
